@@ -5,6 +5,10 @@
         "type": "node__source",
         "children": [
             {
+                "type": "node__include",
+                "value": "header"
+            },
+            {
                 "type": "node__content",
                 "value": "Hello ",
                 "children": []

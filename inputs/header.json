@@ -1,0 +1,13 @@
+{
+    "name": "header",
+    "version": "1.0",
+    "root_node": {
+        "type": "node__source",
+        "children": [
+            {
+                "type": "node__content",
+                "value": "[This is from the header!]\n"
+            }
+        ]
+    }
+}
