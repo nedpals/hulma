@@ -20,6 +20,7 @@ var (
 	NODE_TYPE_DISPLAY  = "node__display"
 	NODE_TYPE_VARIABLE = "node__variable"
 	NODE_TYPE_FILTER   = "node__filter"
+	NODE_TYPE_INCLUDE  = "node__include"
 )
 
 type ContextData map[string]interface{}
@@ -78,6 +79,12 @@ func (node Node) render(writer io.Writer, context ContextData, renderer *Rendere
 				return err
 			}
 		}
+	case NODE_TYPE_INCLUDE:
+		gotTemplate, templateExists := renderer.Templates[node.Value]
+		if !templateExists {
+			return fmt.Errorf("template `%s` does not exist", gotTemplate.Name)
+		}
+		return gotTemplate.Render(writer, context, renderer)
 	default:
 		return fmt.Errorf("unsupported node: %s", node.Type)
 	}
