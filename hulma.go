@@ -101,9 +101,31 @@ func (tmp Template) Render(writer io.Writer, context ContextData, renderer *Rend
 	return tmp.RootNode.render(writer, context, renderer)
 }
 
+type TemplateStore map[string]*Template
+
+func (tmps TemplateStore) String() string {
+	return ""
+}
+
+func (tmps TemplateStore) Set(data string) error {
+	var decodedTemplate *Template
+
+	// data should be JSON
+	if err := json.Unmarshal([]byte(data), &decodedTemplate); err != nil {
+		return err
+	}
+
+	tmps[decodedTemplate.Name] = decodedTemplate
+	return nil
+}
+
+func (tmps TemplateStore) Type() string {
+	return "template_store"
+}
+
 type Renderer struct {
 	DefaultTemplateName string
-	Templates           map[string]*Template
+	Templates           TemplateStore
 	Filters             map[string]FilterFunc
 }
 
@@ -134,28 +156,41 @@ func (rnd *Renderer) RegisterFilter(name string, filterFn FilterFunc) {
 	rnd.Filters[name] = filterFn
 }
 
-var templatePath string
+type FileTemplateLoader struct {
+	Store TemplateStore
+}
+
+func (tmps *FileTemplateLoader) String() string {
+	return ""
+}
+
+func (ftl *FileTemplateLoader) Set(templatePath string) error {
+	fullTemplatePath, _ := filepath.Abs(templatePath)
+	rawTemplateData, err := os.ReadFile(fullTemplatePath)
+	if err != nil {
+		return err
+	}
+	return ftl.Store.Set(string(rawTemplateData))
+}
+
+func (_ *FileTemplateLoader) Type() string {
+	return "file_template_loader"
+}
+
 var dataPath string
 var renderer = &Renderer{
 	DefaultTemplateName: "default",
 	Templates:           map[string]*Template{},
 	Filters:             map[string]FilterFunc{},
 }
+var fileTemplateLoader = FileTemplateLoader{
+	Store: renderer.Templates,
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "hulma",
 	Short: "Hulma is an experimental template compiler.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fullTemplatePath, _ := filepath.Abs(templatePath)
-		rawTemplateData, err := os.ReadFile(fullTemplatePath)
-		if err != nil {
-			return err
-		}
-
-		if _, err := renderer.RegisterTemplateJSON(rawTemplateData); err != nil {
-			return err
-		}
-
 		fullDataPath, _ := filepath.Abs(dataPath)
 		rawContextData, err := os.ReadFile(fullDataPath)
 		if err != nil {
@@ -179,7 +214,8 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&renderer.DefaultTemplateName, "name", "default", "Name of the template to be rendered.")
-	rootCmd.PersistentFlags().StringVar(&templatePath, "template", "", "Path to the template.json file.")
+	rootCmd.PersistentFlags().Var(&fileTemplateLoader, "template", "Path to the template.json file.")
+	rootCmd.PersistentFlags().Var(&renderer.Templates, "templateData", "JSON data of the template.")
 	rootCmd.PersistentFlags().StringVar(&dataPath, "data", "", "Path to the data.json file.")
 }
 
