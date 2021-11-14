@@ -17,6 +17,7 @@ var (
 	NODE_TYPE_SOURCE  = "node__source"
 	NODE_TYPE_CONTENT = "node__content"
 	NODE_TYPE_DISPLAY = "node__display"
+	NODE_TYPE_VARIABLE = "node__variable"
 )
 
 type Node struct {
@@ -25,16 +26,35 @@ type Node struct {
 	Children []Node
 }
 
+func (node Node) evaluate(context map[string]interface{}) (interface{}, error) {
+	switch node.Type {
+	case NODE_TYPE_VARIABLE:
+		gotValue, varExists := context[node.Value]
+		if !varExists {
+			return nil, fmt.Errorf("variable `%s` does not exist", node.Value)
+		}
+
+		return gotValue, nil
+	default:
+		return nil, fmt.Errorf("unsupported node type `%s`", node.Type)
+	}
+}
+
 func (node Node) render(writer io.Writer, context map[string]interface{}) error {
 	switch node.Type {
 	case NODE_TYPE_CONTENT:
 		writer.Write([]byte(node.Value))
 	case NODE_TYPE_DISPLAY:
-		gotValue, varExists := context[node.Value]
-		if !varExists {
-			return fmt.Errorf("variable `%s` does not exist", node.Value)
+		if len(node.Children) == 0 {
+			return fmt.Errorf("nothing to print")
+		}
+
+		gotValue, err := node.Children[0].evaluate(context)
+		if err != nil {
+			return err
 		}
 		writer.Write([]byte(fmt.Sprintf("%s", gotValue)))
+		return nil
 	case NODE_TYPE_SOURCE:
 	default:
 		return fmt.Errorf("unsupported node: %s", node.Type)

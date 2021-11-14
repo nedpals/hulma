@@ -10,7 +10,12 @@
                 "children": [
                     {
                         "type": "node__display",
-                        "value": "name"
+                        "children": [
+				{
+					"type": "node__variable",
+					"value": "name"
+				}
+			]
                     }
                 ]
             }
