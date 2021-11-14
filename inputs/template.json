@@ -1,0 +1,29 @@
+{
+    "name": "sample",
+    "version": "1.0",
+    "root_node": {
+        "type": "node__source",
+        "children": [
+            {
+                "type": "node__content",
+                "value": "Hello ",
+                "children": []
+            },
+            {
+                "type": "node__display",
+                "children": [
+                    {
+                        "type": "node__filter",
+                        "value": "upper",
+                        "children": [
+                            {
+                                "type": "node__variable",
+                                "value": "name"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
