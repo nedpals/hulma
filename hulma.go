@@ -23,6 +23,8 @@ var (
 	NODE_TYPE_INCLUDE  = "node__include"
 	NODE_TYPE_BLOCK    = "node__block"
 	NODE_TYPE_YIELD    = "node__yield"
+	NODE_TYPE_LOOP     = "node__loop"
+	NODE_TYPE_ASSIGN   = "node__assign"
 )
 
 type ContextData map[string]interface{}
@@ -131,6 +133,34 @@ func (node Node) render(writer io.Writer, context ContextData, renderer *Rendere
 					return err
 				}
 			}
+		}
+	case NODE_TYPE_LOOP:
+		// for loop dissect
+		// index 0 -
+
+		// copy old context data
+		oldContext := make(ContextData)
+		for k, v := range context {
+			oldContext[k] = v
+		}
+
+		// make a new special variable
+
+		// context["$$i"] = len()
+
+		newlyAssigned := make([]string, 10)
+		for _, cn := range node.Children {
+			if err := cn.render(writer, context, renderer); err != nil {
+				return err
+			}
+		}
+
+		for _, v := range newlyAssigned {
+			delete(context, v)
+		}
+
+		for k, v := range oldContext {
+			context[k] = v
 		}
 	default:
 		return fmt.Errorf("[render] unsupported node: %s", node.Type)
