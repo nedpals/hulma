@@ -123,44 +123,11 @@ func (tmps TemplateStore) Type() string {
 	return "template_store"
 }
 
-type Renderer struct {
-	DefaultTemplateName string
-	Templates           TemplateStore
-	Filters             map[string]FilterFunc
-}
-
-func (rnd *Renderer) Render(templateName string, contextData ContextData) (string, error) {
-	selectedTemplate, templateExists := rnd.Templates[templateName]
-	if !templateExists {
-		return "", fmt.Errorf("template `%s` does not exist", templateName)
-	}
-
-	buf := &bytes.Buffer{}
-	if err := selectedTemplate.Render(buf, contextData, rnd); err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
-}
-
-func (rnd *Renderer) RegisterTemplateJSON(rawTemplateData []byte) (*Template, error) {
-	var decodedTemplate *Template
-	if err := json.Unmarshal(rawTemplateData, &decodedTemplate); err != nil {
-		return nil, err
-	}
-	rnd.Templates[decodedTemplate.Name] = decodedTemplate
-	return decodedTemplate, nil
-}
-
-func (rnd *Renderer) RegisterFilter(name string, filterFn FilterFunc) {
-	rnd.Filters[name] = filterFn
-}
-
 type FileTemplateLoader struct {
 	Store TemplateStore
 }
 
-func (tmps *FileTemplateLoader) String() string {
+func (*FileTemplateLoader) String() string {
 	return ""
 }
 
@@ -173,18 +140,60 @@ func (ftl *FileTemplateLoader) Set(templatePath string) error {
 	return ftl.Store.Set(string(rawTemplateData))
 }
 
-func (_ *FileTemplateLoader) Type() string {
+func (*FileTemplateLoader) Type() string {
 	return "file_template_loader"
 }
 
+type App struct {
+	DefaultTemplateName string
+	Templates           TemplateStore
+	Filters             map[string]FilterFunc
+	fileTemplateLoader  *FileTemplateLoader
+}
+
+func (app *App) Render(templateName string, contextData ContextData) (string, error) {
+	selectedTemplate, templateExists := app.Templates[templateName]
+	if !templateExists {
+		return "", fmt.Errorf("template `%s` does not exist", templateName)
+	}
+
+	buf := &bytes.Buffer{}
+	renderer := &Renderer{
+		Templates: app.Templates,
+		Filters:   app.Filters,
+		Blocks:    make(map[string][]Node),
+	}
+
+	if err := selectedTemplate.Render(buf, contextData, renderer); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func (rnd *App) RegisterTemplateJSON(rawTemplateData []byte) (*Template, error) {
+	var decodedTemplate *Template
+	if err := json.Unmarshal(rawTemplateData, &decodedTemplate); err != nil {
+		return nil, err
+	}
+	rnd.Templates[decodedTemplate.Name] = decodedTemplate
+	return decodedTemplate, nil
+}
+
+func (rnd *App) RegisterFilter(name string, filterFn FilterFunc) {
+	rnd.Filters[name] = filterFn
+}
+
 var dataPath string
-var renderer = &Renderer{
+var app = &App{
 	DefaultTemplateName: "default",
-	Templates:           map[string]*Template{},
+	Templates:           TemplateStore{},
 	Filters:             map[string]FilterFunc{},
 }
-var fileTemplateLoader = FileTemplateLoader{
-	Store: renderer.Templates,
+
+type Renderer struct {
+	Templates TemplateStore
+	Filters   map[string]FilterFunc
+	Blocks    map[string][]Node
 }
 
 var rootCmd = &cobra.Command{
@@ -202,7 +211,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		data, err := renderer.Render(renderer.DefaultTemplateName, contextData)
+		data, err := app.Render(app.DefaultTemplateName, contextData)
 		if err != nil {
 			return err
 		}
@@ -213,14 +222,15 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&renderer.DefaultTemplateName, "name", "default", "Name of the template to be rendered.")
-	rootCmd.PersistentFlags().Var(&fileTemplateLoader, "template", "Path to the template.json file.")
-	rootCmd.PersistentFlags().Var(&renderer.Templates, "templateData", "JSON data of the template.")
+	app.fileTemplateLoader = &FileTemplateLoader{app.Templates}
+	rootCmd.PersistentFlags().StringVar(&app.DefaultTemplateName, "name", "default", "Name of the template to be rendered.")
+	rootCmd.PersistentFlags().Var(app.fileTemplateLoader, "template", "Path to the template.json file.")
+	rootCmd.PersistentFlags().Var(&app.Templates, "templateData", "JSON data of the template.")
 	rootCmd.PersistentFlags().StringVar(&dataPath, "data", "", "Path to the data.json file.")
 }
 
 func main() {
-	renderer.RegisterFilter("upper", func(context ContextData, nodes ...Node) (interface{}, error) {
+	app.RegisterFilter("upper", func(context ContextData, nodes ...Node) (interface{}, error) {
 		if len(nodes) == 0 {
 			return nil, fmt.Errorf("value is empty")
 		}
