@@ -13,12 +13,17 @@
                 "value": "page_title",
                 "children": [
                     {
-                        "type": "node__filter",
-                        "value": "upper",
+                        "type": "node__display",
                         "children": [
                             {
-                                "type": "node__content",
-                                "value": "Home page"
+                                "type": "node__filter",
+                                "value": "upper",
+                                "children": [
+                                    {
+                                        "type": "node__content",
+                                        "value": "Home page"
+                                    }
+                                ]
                             }
                         ]
                     }
