@@ -6,7 +6,21 @@
         "children": [
             {
                 "type": "node__content",
-                "value": "[This is from the header!]\n"
+                "value": "Page title: "
+            },
+            {
+                "type": "node__yield",
+                "value": "page_title",
+                "children": [
+                    {
+                        "type": "node__content",
+                        "value": "default page title"
+                    }
+                ]
+            },
+            {
+                "type": "node__content",
+                "value": "\n[This is from the header!]\n"
             }
         ]
     }
