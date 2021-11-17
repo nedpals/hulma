@@ -21,6 +21,8 @@ var (
 	NODE_TYPE_VARIABLE = "node__variable"
 	NODE_TYPE_FILTER   = "node__filter"
 	NODE_TYPE_INCLUDE  = "node__include"
+	NODE_TYPE_BLOCK    = "node__block"
+	NODE_TYPE_YIELD    = "node__yield"
 )
 
 type ContextData map[string]interface{}
@@ -40,12 +42,13 @@ type Node struct {
 
 func (node Node) Evaluate(context ContextData, renderer *Renderer) (interface{}, error) {
 	switch node.Type {
+	case NODE_TYPE_CONTENT:
+		return node.Value, nil
 	case NODE_TYPE_VARIABLE:
 		gotValue, varExists := context[node.Value]
 		if !varExists {
 			return nil, fmt.Errorf("variable `%s` does not exist", node.Value)
 		}
-
 		return gotValue, nil
 	case NODE_TYPE_FILTER:
 		gotFilter, filterExists := renderer.Filters[node.Value]
@@ -54,8 +57,22 @@ func (node Node) Evaluate(context ContextData, renderer *Renderer) (interface{},
 		}
 		return gotFilter(context, node.Children...)
 	default:
-		return nil, fmt.Errorf("unsupported node type `%s`", node.Type)
+		return nil, fmt.Errorf("[eval] unsupported node type `%s`", node.Type)
 	}
+}
+
+func (node Node) scanBlocks(parentBlockName string, context ContextData, renderer *Renderer) error {
+	for _, cn := range node.Children {
+		if cn.Type != NODE_TYPE_BLOCK {
+			continue
+		} else if cn.Value == parentBlockName {
+			return fmt.Errorf("`%s` block should not be recursive", cn.Value)
+		} else {
+			cn.scanBlocks(cn.Value, context, renderer)
+			renderer.Blocks[cn.Value] = cn.Children
+		}
+	}
+	return nil
 }
 
 func (node Node) render(writer io.Writer, context ContextData, renderer *Renderer) error {
@@ -67,14 +84,27 @@ func (node Node) render(writer io.Writer, context ContextData, renderer *Rendere
 			return fmt.Errorf("nothing to print")
 		}
 
-		gotValue, err := node.Children[0].Evaluate(context, renderer)
+		child := node.Children[0]
+		if child.Type == NODE_TYPE_BLOCK {
+			return child.render(writer, context, renderer)
+		}
+
+		gotValue, err := child.Evaluate(context, renderer)
 		if err != nil {
 			return err
 		}
 
 		writer.Write([]byte(fmt.Sprintf("%s", gotValue)))
 	case NODE_TYPE_SOURCE:
+		if err := node.scanBlocks("", context, renderer); err != nil {
+			return err
+		}
+
 		for _, cn := range node.Children {
+			if cn.Type == NODE_TYPE_BLOCK {
+				continue
+			}
+
 			if err := cn.render(writer, context, renderer); err != nil {
 				return err
 			}
@@ -85,8 +115,25 @@ func (node Node) render(writer io.Writer, context ContextData, renderer *Rendere
 			return fmt.Errorf("template `%s` does not exist", gotTemplate.Name)
 		}
 		return gotTemplate.Render(writer, context, renderer)
+	case NODE_TYPE_YIELD:
+		gotBlock, blockExists := renderer.Blocks[node.Value]
+		if !blockExists {
+			// use default content
+			for _, cn := range node.Children {
+				if err := cn.render(writer, context, renderer); err != nil {
+					return err
+				}
+			}
+			return nil
+		} else {
+			for _, cn := range gotBlock {
+				if err := cn.render(writer, context, renderer); err != nil {
+					return err
+				}
+			}
+		}
 	default:
-		return fmt.Errorf("unsupported node: %s", node.Type)
+		return fmt.Errorf("[render] unsupported node: %s", node.Type)
 	}
 	return nil
 }
