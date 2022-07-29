@@ -17,7 +17,6 @@ func (filterFn FilterFunc) ToFunction() FunctionFunc {
 		} else if args, ok := arguments.(map[string]any); ok {
 			for _, v := range args {
 				return filterFn(v)
-				break
 			}
 		} else {
 			return filterFn(arguments)
