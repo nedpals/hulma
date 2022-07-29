@@ -2,25 +2,25 @@
     "name": "sample",
     "version": "1.0",
     "root_node": {
-        "type": "node__source",
+        "type": "source",
         "children": [
             {
-                "type": "node__include",
+                "type": "include",
                 "value": "header"
             },
             {
-                "type": "node__block",
+                "type": "block",
                 "value": "page_title",
                 "children": [
                     {
-                        "type": "node__display",
+                        "type": "display",
                         "children": [
                             {
-                                "type": "node__filter",
+                                "type": "filter",
                                 "value": "upper",
                                 "children": [
                                     {
-                                        "type": "node__content",
+                                        "type": "content",
                                         "value": "Home page"
                                     }
                                 ]
@@ -30,20 +30,20 @@
                 ]
             },
             {
-                "type": "node__content",
+                "type": "content",
                 "value": "Hello ",
                 "children": []
             },
             {
-                "type": "node__display",
+                "type": "display",
                 "children": [
                     {
-                        "type": "node__filter",
+                        "type": "filter",
                         "value": "upper",
                         "children": [
                             {
-                                "type": "node__variable",
-                                "value": "name"
+                                "type": "function",
+                                "value": "foo"
                             }
                         ]
                     }

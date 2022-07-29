@@ -2,24 +2,29 @@
     "name": "header",
     "version": "1.0",
     "root_node": {
-        "type": "node__source",
+        "type": "source",
         "children": [
             {
-                "type": "node__content",
+                "type": "content",
                 "value": "Page title: "
             },
             {
-                "type": "node__yield",
-                "value": "page_title",
+                "type": "statement",
                 "children": [
                     {
-                        "type": "node__content",
-                        "value": "default page title"
+                        "type": "yield",
+                        "value": "page_title",
+                        "children": [
+                            {
+                                "type": "content",
+                                "value": "default page title"
+                            }
+                        ]
                     }
                 ]
             },
             {
-                "type": "node__content",
+                "type": "content",
                 "value": "\n[This is from the header!]\n"
             }
         ]
