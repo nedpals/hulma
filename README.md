@@ -84,4 +84,4 @@ The context data is still a JSON object in which the keys are the variables and 
 ## License
 Licensed under MIT. See [LICENSE](LICENSE) for more details.
 
-### (c) 2021 Ned Palacios
+### (c) 2021-2022 Ned Palacios
