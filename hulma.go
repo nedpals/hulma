@@ -60,7 +60,6 @@ func (rnd *App) RegisterFilter(name string, filterFn FilterFunc) {
 
 func (rnd *App) RegisterFunction(name string, fnFn FunctionFunc) {
 	rnd.Functions[name] = fnFn
-	fmt.Println(rnd.Functions)
 }
 
 var dataPath string
