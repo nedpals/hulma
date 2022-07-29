@@ -26,6 +26,7 @@ const (
 type StatementNodeType NodeType
 
 const (
+	NODE_TYPE_COND   StatementNodeType = "cond"
 	NODE_TYPE_YIELD  StatementNodeType = "yield"
 	NODE_TYPE_LOOP   StatementNodeType = "loop"
 	NODE_TYPE_ASSIGN StatementNodeType = "assign"
@@ -36,6 +37,14 @@ type FunctionNodeType NodeType
 const (
 	NODE_TYPE_FUNCTION_PARAMETER FunctionNodeType = "filter_parameter"
 	NODE_TYPE_FUNCTION_ARGUMENT  FunctionNodeType = "filter_argument"
+)
+
+type CondNodeType NodeType
+
+const (
+	NODE_TYPE_COND_EXPR   CondNodeType = "cond_expression"
+	NODE_TYPE_COND_CONSEQ CondNodeType = "cond_consequence"
+	NODE_TYPE_COND_ALTER  CondNodeType = "cond_alternative"
 )
 
 type Node struct {
@@ -148,6 +157,19 @@ func (node Node) collectFunctionArguments(tmpl TemplateData) (any, error) {
 	return values, nil
 }
 
+func renderBool(value any) bool {
+	if value == nil {
+		return false
+	} else if boolVal, ok := value.(bool); ok {
+		return boolVal
+	} else if strVal, ok := value.(string); ok {
+		return len(strVal) != 0
+	} else {
+		// TODO: support for maps and arrays
+		return false
+	}
+}
+
 func (node Node) evaluateStatement(tmpl TemplateData, renderer Renderer) error {
 	stmtType := StatementNodeType(node.Type)
 	switch stmtType {
@@ -156,6 +178,32 @@ func (node Node) evaluateStatement(tmpl TemplateData, renderer Renderer) error {
 			return renderChildren(gotBlock, tmpl, renderer)
 		} else {
 			return renderChildren(node.Children, tmpl, renderer)
+		}
+	case NODE_TYPE_COND:
+		if len(node.Children) < 2 || CondNodeType(node.Children[0].Type) != NODE_TYPE_COND_EXPR || len(node.Children[0].Children) != 1 {
+			return fmt.Errorf("invalid conditional node")
+		} else if len(node.Children) == 3 && (StatementNodeType(node.Children[2].Type) != NODE_TYPE_COND || CondNodeType(node.Children[2].Type) != NODE_TYPE_COND_ALTER) {
+			return fmt.Errorf("invalid conditional node")
+		}
+
+		condExpr := node.Children[0]
+		rawEvaluatedValue, err := condExpr.Children[0].evaluateExpression(tmpl)
+		if err != nil {
+			return err
+		}
+
+		evaluatedResult := renderBool(rawEvaluatedValue)
+		if evaluatedResult {
+			return renderChildren(node.Children[1].Children, tmpl, renderer)
+		} else if len(node.Children) == 3 {
+			// else-if or elif
+			if StatementNodeType(node.Children[2].Type) == NODE_TYPE_COND {
+				return node.Children[2].evaluateStatement(tmpl, renderer)
+			} else {
+				return renderChildren(node.Children[2].Children, tmpl, renderer)
+			}
+		} else if len(node.Children) == 4 {
+			return renderChildren(node.Children[3].Children, tmpl, renderer)
 		}
 	case NODE_TYPE_LOOP:
 		// for loop dissect

@@ -30,20 +30,53 @@
                 ]
             },
             {
-                "type": "content",
-                "value": "Hello ",
-                "children": []
-            },
-            {
-                "type": "display",
+                "type": "statement",
                 "children": [
                     {
-                        "type": "filter",
-                        "value": "upper",
+                        "type": "cond",
                         "children": [
                             {
-                                "type": "function",
-                                "value": "foo"
+                                "type": "cond_expression",
+                                "children": [
+                                    {
+                                        "type": "variable",
+                                        "value": "name"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "cond_consequence",
+                                "children": [
+                                    {
+                                        "type": "content",
+                                        "value": "Hello ",
+                                        "children": []
+                                    },
+                                    {
+                                        "type": "display",
+                                        "children": [
+                                            {
+                                                "type": "filter",
+                                                "value": "upper",
+                                                "children": [
+                                                    {
+                                                        "type": "variable",
+                                                        "value": "name"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "cond_alternative",
+                                "children": [
+                                    {
+                                        "type": "content",
+                                        "value": "No name found"
+                                    }
+                                ]
                             }
                         ]
                     }

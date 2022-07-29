@@ -74,7 +74,7 @@ The context data is still a JSON object in which the keys are the variables and 
 ```
 
 ## Notes
-- Loops and conditionals are not supported at this moment.
+- Loops and ~~conditionals~~ are not supported at this moment.
 - Complex expressions such as index expressions, selectors, binary, and unary are also planned.
 - There will be support for a client-server mode (in TCP) which will make Hulma utilized to it's full potential.
 - Although my aim is to have stable support, adding tests are not my top priority right now.
