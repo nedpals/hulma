@@ -18,17 +18,17 @@ It requires the source templating language to emit an IR first before using. Thi
 The immediate representation is just a simple JSON format which can be hand written and has a tree-like structure. 
 
 ### Template
-The "template", which is the root JSON object you are seeing here, consists of a `name`, a `version`, and a `root_node` with a `node__source` node as the starting (or the root) node.
+The "template", which is the root JSON object you are seeing here, consists of a `name`, a `version`, and a `root_node` with a `source` node as the starting (or the root) node.
 
 ```json
 {
     "name": "page",
     "version": "1.0",
     "root_node": {
-        "type": "node__source",
+        "type": "source",
         "children": [
             {
-                "type": "node__content",
+                "type": "content",
                 "value": "This is a page!"
             }
         ]
@@ -40,10 +40,10 @@ The "template", which is the root JSON object you are seeing here, consists of a
 A node object consists of `type`, `value`, and `children` which is an array of nodes. The last two can be optional depending on the node type.
 ```json
 {
-    "type": "node__source",
+    "type": "source",
     "children": [
         {
-            "type": "node__content",
+            "type": "content",
             "value": "This is a page!"
         }
     ]
@@ -55,14 +55,14 @@ Currently, there are eight node types that can be used.
 
 |Type|Value|Children|Notes/Description|
 |----|-----|--------|-----|
-|`node__source`|❌|✅|The source node. Can be only used as a root node.|
-|`node__content`|✅|❌|The content node. Used to display static plain text content.|
-|`node__display`|❌|✅|The display node. Used to display/output expressions or identifiers such as variables.|
-|`node__variable`|✅|❌|The variable node. Used to reference a variable from the given context data.|
-|`node__filter`|✅|✅|The filter node. Applies a filter to the child.|
-|`node__include`|✅|❌|The include node. Used to include other templates into the current template.|
-|`node__block`|✅|✅|The block node. Used for inserting custom content into a specific content block. There must be an equivalent `yield` block in order to display the content.|
-|`node__yield`|✅|✅|The yield node. Used for displaying a specific content block. If no custom content block was found, it can supply a default content as a fallback.|
+|`source`|❌|✅|The source node. Can be only used as a root node.|
+|`content`|✅|❌|The content node. Used to display static plain text content.|
+|`display`|❌|✅|The display node. Used to display/output expressions or identifiers such as variables.|
+|`variable`|✅|❌|The variable node. Used to reference a variable from the given context data.|
+|`filter`|✅|✅|The filter node. Applies a filter to the child.|
+|`include`|✅|❌|The include node. Used to include other templates into the current template.|
+|`block`|✅|✅|The block node. Used for inserting custom content into a specific content block. There must be an equivalent `yield` block in order to display the content.|
+|`yield`|✅|✅|The yield node. Used for displaying a specific content block. If no custom content block was found, it can supply a default content as a fallback.|
 
 ## Context Data
 The context data is still a JSON object in which the keys are the variables and the values are the contents of the variables.
@@ -79,6 +79,7 @@ The context data is still a JSON object in which the keys are the variables and 
 - There will be support for a client-server mode (in TCP) which will make Hulma utilized to it's full potential.
 - Although my aim is to have stable support, adding tests are not my top priority right now.
 - There are no reference implementations in the "front-end" side at this moment.
+- The error tracking is limited and does not support position tracking because of the design limitations imposed to the IR.
 
 ## License
 Licensed under MIT. See [LICENSE](LICENSE) for more details.
