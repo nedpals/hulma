@@ -80,19 +80,27 @@ func (tmps TemplateStore) Render(name string, data TemplateData, renderer Render
 	}
 }
 
-func (tmps TemplateStore) Set(data string) error {
-	decodedTemplate := &Template{
+func newTemplate() *Template {
+	return &Template{
 		blocks: make(map[string][]Node),
 	}
+}
+
+func (tmps TemplateStore) Add(template *Template) error {
+	template.scanBlocks()
+	tmps[template.Name] = template
+	return nil
+}
+
+func (tmps TemplateStore) Set(data string) error {
+	decodedTemplate := newTemplate()
 
 	// data should be JSON
 	if err := json.UnmarshalFromString(data, &decodedTemplate); err != nil {
 		return err
 	}
 
-	decodedTemplate.scanBlocks()
-	tmps[decodedTemplate.Name] = decodedTemplate
-	return nil
+	return tmps.Add(decodedTemplate)
 }
 
 func (tmps TemplateStore) Type() string {

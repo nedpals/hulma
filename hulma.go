@@ -7,11 +7,64 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/nedpals/hulma/engines"
 	"github.com/spf13/cobra"
 )
 
+func EngineNodeToTemplate(engineNode engines.Node) (Node, error) {
+	engineChildren := engineNode.Children()
+	nodeChildren := make([]Node, 0, len(engineChildren))
+
+	for _, cn := range engineChildren {
+		nodeChild, err := EngineNodeToTemplate(cn)
+		if err != nil {
+			return Node{}, err
+		}
+		nodeChildren = append(nodeChildren, nodeChild)
+	}
+
+	return Node{
+		Type:     engineNode.Type(),
+		Value:    engineNode.Value(),
+		Children: nodeChildren,
+	}, nil
+}
+
+var defaultEngines = engines.Engines{
+	engines.RawJson{},
+}
+
 type FileTemplateLoader struct {
-	Store TemplateStore
+	Engines engines.Engines
+	Store   TemplateStore
+}
+
+func (ftl *FileTemplateLoader) LoadFromEngine(fileName string, input string) error {
+	foundEngine, templateName, err := ftl.Engines.MatchEngine(fileName)
+	fmt.Printf("%T\n", foundEngine)
+
+	if err != nil {
+		return err
+	} else if _, ok := foundEngine.(engines.RawJson); ok {
+		return ftl.Store.Set(input)
+	}
+
+	parsedNode, err := foundEngine.RenderString(input)
+	if err != nil {
+		return err
+	}
+
+	rootNode, err := EngineNodeToTemplate(parsedNode)
+	if err != nil {
+		return err
+	}
+
+	return ftl.Store.Add(&Template{
+		Name:     templateName,
+		blocks:   make(map[string][]Node),
+		Version:  "1",
+		RootNode: rootNode,
+	})
 }
 
 func (*FileTemplateLoader) String() string {
@@ -24,7 +77,7 @@ func (ftl *FileTemplateLoader) Set(templatePath string) error {
 	if err != nil {
 		return err
 	}
-	return ftl.Store.Set(string(rawTemplateData))
+	return ftl.LoadFromEngine(fullTemplatePath, string(rawTemplateData))
 }
 
 func (*FileTemplateLoader) Type() string {
@@ -96,7 +149,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	fileTemplateLoader := &FileTemplateLoader{app.Templates}
+	fileTemplateLoader := &FileTemplateLoader{Store: app.Templates, Engines: defaultEngines}
 	rootCmd.PersistentFlags().StringVar(&app.DefaultTemplateName, "name", "default", "Name of the template to be rendered.")
 	rootCmd.PersistentFlags().Var(fileTemplateLoader, "template", "Path to the template.json file.")
 	rootCmd.PersistentFlags().Var(&app.Templates, "templateData", "JSON data of the template.")
