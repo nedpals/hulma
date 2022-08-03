@@ -41,8 +41,6 @@ type FileTemplateLoader struct {
 
 func (ftl *FileTemplateLoader) LoadFromEngine(fileName string, input string) error {
 	foundEngine, templateName, err := ftl.Engines.MatchEngine(fileName)
-	fmt.Printf("%T\n", foundEngine)
-
 	if err != nil {
 		return err
 	} else if _, ok := foundEngine.(engines.RawJson); ok {
@@ -169,7 +167,7 @@ func main() {
 	})
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		// fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
