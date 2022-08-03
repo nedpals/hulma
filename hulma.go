@@ -2,7 +2,10 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -84,9 +87,35 @@ func (*FileTemplateLoader) Type() string {
 
 type App struct {
 	DefaultTemplateName string
+	OutputPath          string
 	Templates           TemplateStore
 	Filters             map[string]FilterFunc
 	Functions           map[string]FunctionFunc
+}
+
+func (app *App) SaveOutput(data string) error {
+	fileInfo, err := os.Stat(app.OutputPath)
+	if fileInfo != nil && fileInfo.IsDir() {
+		return fmt.Errorf("path is a directory")
+	}
+
+	var file *os.File
+	if err != nil && errors.Is(err, fs.ErrExist) {
+		file, err = os.Open(app.OutputPath)
+	} else {
+		file, err = os.Create(app.OutputPath)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+	if _, err := io.WriteString(file, data); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (app *App) Render(templateName string, varData map[string]any) (string, error) {
@@ -141,13 +170,21 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Println(data)
+		if app.OutputPath == "stdout" {
+			fmt.Println(data)
+		} else if err := app.SaveOutput(data); err != nil {
+			return fmt.Errorf("cannot save to %s: %s", app.OutputPath, err.Error())
+		} else {
+			fmt.Printf("saved to %s\n", app.OutputPath)
+		}
+
 		return nil
 	},
 }
 
 func init() {
 	fileTemplateLoader := &FileTemplateLoader{Store: app.Templates, Engines: defaultEngines}
+	rootCmd.PersistentFlags().StringVarP(&app.OutputPath, "output", "o", "stdout", "Location where the rendered output will be stored.")
 	rootCmd.PersistentFlags().StringVar(&app.DefaultTemplateName, "name", "default", "Name of the template to be rendered.")
 	rootCmd.PersistentFlags().Var(fileTemplateLoader, "template", "Path to the template.json file.")
 	rootCmd.PersistentFlags().Var(&app.Templates, "templateData", "JSON data of the template.")
