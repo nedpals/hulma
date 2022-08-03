@@ -199,6 +199,13 @@ func main() {
 		return value, nil
 	})
 
+	app.RegisterFilter("lower", func(value any) (any, error) {
+		if valueStr, ok := value.(string); ok {
+			return strings.ToLower(valueStr), nil
+		}
+		return value, nil
+	})
+
 	app.RegisterFunction("foo", func(arguments any) (any, error) {
 		return "foo", nil
 	})
