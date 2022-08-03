@@ -34,6 +34,7 @@ func EngineNodeToTemplate(engineNode engines.Node) (Node, error) {
 }
 
 var defaultEngines = engines.Engines{
+	engines.Twig{},
 	engines.RawJson{},
 }
 

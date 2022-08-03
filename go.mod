@@ -7,6 +7,8 @@ require (
 	github.com/spf13/cobra v1.2.1
 )
 
+require github.com/zyedidia/generic v1.1.0
+
 require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect

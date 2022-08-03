@@ -35,3 +35,11 @@ type Node interface {
 	Value() string
 	Children() []Node
 }
+
+func ConvertChildren[T Node](gotChildren []T) []Node {
+	children := make([]Node, 0, len(gotChildren))
+	for _, v := range gotChildren {
+		children = append(children, v)
+	}
+	return children
+}
