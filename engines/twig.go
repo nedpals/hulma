@@ -23,6 +23,7 @@ const (
 	TWIG_SELECTOR
 	TWIG_FILTER
 	TWIG_CALL
+	TWIG_COMMENT
 	TWIG_ERROR
 )
 
@@ -52,6 +53,8 @@ func (node TwigNode) Type() nodetypes.NodeType {
 		return nodetypes.NodeType(nodetypes.NODE_TYPE_FILTER)
 	case TWIG_CALL:
 		return nodetypes.NodeType(nodetypes.NODE_TYPE_FUNCTION)
+	case TWIG_COMMENT:
+		return nodetypes.NodeType(nodetypes.NODE_TYPE_COMMENT)
 	default:
 		return nodetypes.NodeType(nodetypes.NODE_TYPE_CONTENT) // ??
 	}
@@ -112,7 +115,7 @@ func (sc TwigScanner) Scan() (TwigNode, error) {
 	}
 
 	for tok := sc.scanner.Scan(); tok != scanner.EOF; tok = sc.scanner.Scan() {
-		if peek := sc.scanner.Peek(); tok == '{' && (peek == '{' || peek == '%') {
+		if peek := sc.scanner.Peek(); tok == '{' && (peek == '{' || peek == '%' || peek == '#') {
 			if sc.tokenBuilder.Len() != 0 {
 				root.children = append(root.children, TwigNode{
 					node_type: TWIG_RAW,
@@ -152,6 +155,13 @@ func (sc TwigScanner) Scan() (TwigNode, error) {
 			case '%':
 				// sc.stack.Push(TWIG_STMT)
 				return sc.error(fmt.Errorf("statement block tag not yet implemented"))
+			case '#':
+				commentNode, err := sc.scanComments()
+				if err != nil {
+					return sc.error(err)
+				}
+
+				root.children = append(root.children, commentNode)
 			}
 
 			sc.skipWhitespace(false)
@@ -170,6 +180,25 @@ func (sc TwigScanner) Scan() (TwigNode, error) {
 	}
 
 	return root, nil
+}
+
+func (sc TwigScanner) scanComments() (TwigNode, error) {
+	defer sc.tokenBuilder.Reset()
+	sc.skipWhitespace(false)
+
+	for {
+		tok := sc.scanner.Scan()
+		if tok == '#' && sc.scanner.Peek() == '}' {
+			sc.scanner.Next()
+			break
+		}
+		sc.tokenBuilder.WriteRune(tok)
+	}
+
+	return TwigNode{
+		node_type: TWIG_COMMENT,
+		value:     sc.tokenBuilder.String(),
+	}, nil
 }
 
 func (sc TwigScanner) scanExpression() (TwigNode, error) {
