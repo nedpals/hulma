@@ -236,6 +236,8 @@ func (node Node) evaluate(tmpl TemplateData, renderer Renderer) error {
 		return node.Children[0].evaluateStatement(tmpl, renderer)
 	case types.NODE_TYPE_BLOCK:
 		return nil
+	case types.NODE_TYPE_COMMENT:
+		return nil
 	default:
 		return fmt.Errorf("[evaluate] unsupported node: %s", node.Type)
 	}

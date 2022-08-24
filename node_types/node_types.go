@@ -8,6 +8,7 @@ const (
 	NODE_TYPE_STATEMENT NodeType = "statement"
 	NODE_TYPE_INCLUDE   NodeType = "include"
 	NODE_TYPE_BLOCK     NodeType = "block"
+	NODE_TYPE_COMMENT   NodeType = "comment"
 )
 
 type ExpressionNodeType NodeType
